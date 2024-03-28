@@ -1,5 +1,5 @@
-# PinView
-PinView is an input design with a pin. With this library you can add a simple custom pin view. It only supports 6 character passwords.
+# pin-view
+pin-view is a UI design that allows entry using a PIN. With this library you can add a simple custom pin view. It only supports 6 character passwords.
 
 ![pin view](images/pinview.jpg)
 

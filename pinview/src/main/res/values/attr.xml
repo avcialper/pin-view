@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="pin_view">
+        <attr name="selected_border_color" format="color" />
+        <attr name="unselected_border_color" format="color" />
+        <attr name="error_border_color" format="color" />
+        <attr name="border_width" format="integer" />
+        <attr name="pin_background" format="color" />
+        <attr name="android:id" />
+        <attr name="android:textColor" />
+    </declare-styleable>
+
+</resources>

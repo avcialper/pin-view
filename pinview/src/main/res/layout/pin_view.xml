@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:columnCount="6"
+    android:rowCount="1"
+    android:useDefaultMargins="true">
+
+    <EditText
+        android:id="@+id/firstChar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_columnWeight="1"
+        android:background="@drawable/pin"
+        android:cursorVisible="false"
+        android:imeOptions="actionNext"
+        android:inputType="numberPassword"
+        android:maxLength="1"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/secondChar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_columnWeight="1"
+        android:background="@drawable/pin"
+        android:cursorVisible="false"
+        android:imeOptions="actionNext"
+        android:inputType="numberPassword"
+        android:maxLength="1"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/thirdChar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_columnWeight="1"
+        android:background="@drawable/pin"
+        android:cursorVisible="false"
+        android:imeOptions="actionNext"
+        android:inputType="numberPassword"
+        android:maxLength="1"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/fourthChar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_columnWeight="1"
+        android:background="@drawable/pin"
+        android:cursorVisible="false"
+        android:imeOptions="actionNext"
+        android:inputType="numberPassword"
+        android:maxLength="1"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/fifthChar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_columnWeight="1"
+        android:background="@drawable/pin"
+        android:cursorVisible="false"
+        android:imeOptions="actionNext"
+        android:inputType="numberPassword"
+        android:maxLength="1"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/sixthChar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_columnWeight="1"
+        android:background="@drawable/pin"
+        android:cursorVisible="false"
+        android:imeOptions="actionNext"
+        android:inputType="numberPassword"
+        android:maxLength="1"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+</GridLayout>

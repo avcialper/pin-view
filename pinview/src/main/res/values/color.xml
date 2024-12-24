@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <color name="black">#000000</color>
     <color name="main">#7752FE</color>
     <color name="default_background">#34BAB7B7</color>
     <color name="default_border">#7A000000</color>
     <color name="default_error_border">#FF0000</color>
+    <color name="default_success_border">#2E9731</color>
 
 </resources>

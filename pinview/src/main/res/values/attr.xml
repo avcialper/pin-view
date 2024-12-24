@@ -2,13 +2,22 @@
 <resources>
 
     <declare-styleable name="pin_view">
-        <attr name="selected_border_color" format="color" />
-        <attr name="unselected_border_color" format="color" />
-        <attr name="error_border_color" format="color" />
-        <attr name="border_width" format="integer" />
-        <attr name="pin_background" format="color" />
         <attr name="android:id" />
+        <attr name="android:textSize" />
         <attr name="android:textColor" />
+        <attr name="width" format="dimension" />
+        <attr name="height" format="dimension" />
+        <attr name="pin_border_width" format="dimension" />
+        <attr name="margin_horizontal" format="dimension" />
+        <attr name="selected_background_color" format="color" />
+        <attr name="selected_border_color" format="color" />
+        <attr name="unselected_background_color" format="color" />
+        <attr name="unselected_border_color" format="color" />
+        <attr name="error_background_color" format="color" />
+        <attr name="error_border_color" format="color" />
+        <attr name="success_background_color" format="color" />
+        <attr name="success_border_color" format="color" />
+        <attr name="box_count" format="integer" />
     </declare-styleable>
 
 </resources>

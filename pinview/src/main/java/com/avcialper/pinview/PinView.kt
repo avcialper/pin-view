@@ -1,6 +1,8 @@
 package com.avcialper.pinview
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.TypedArray
 import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.view.KeyEvent
@@ -8,217 +10,294 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import android.widget.GridLayout
+import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import com.avcialper.pin_view.R
 import com.avcialper.pin_view.databinding.PinViewBinding
+import com.avcialper.pinview.utils.PinBoxType
 
+@SuppressLint("CustomViewStyleable")
 class PinView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyle: Int = 0
-) : GridLayout(context, attrs, defStyle) {
+) : LinearLayout(context, attrs, defStyle) {
 
-    private lateinit var editTextList: Array<EditText>
-    private lateinit var inputMethodManager: InputMethodManager
+    private val pinBoxList: MutableList<EditText> by lazy {
+        val binding = getBinding()
+        mutableListOf(
+            binding.firstChar.pinBox,
+            binding.secondChar.pinBox,
+            binding.thirdChar.pinBox,
+            binding.fourthChar.pinBox,
+            binding.fifthChar.pinBox,
+            binding.sixthChar.pinBox,
+            binding.seventhChar.pinBox,
+            binding.eightChar.pinBox
+        )
+    }
 
-    // attr
-    private var selectedBorderColor: Int
-    private var unselectedBorderColor: Int
-    private var errorBorderColor: Int
-    private var background: Int
-    private var borderWidth: Int
+    // Keyboard manager.
+    private var inputMethodManager: InputMethodManager
+
+    // OnPinCompleted listener for
+    private var onPinCompleted: ((String) -> Boolean)? = null
+
+    // PinBoxGradiantDrawable
+    private var pinBoxUnselectedView: GradientDrawable
+    private var pinBoxSelectedView: GradientDrawable
+    private var pinBoxSuccessView: GradientDrawable
+    private var pinBoxErrorView: GradientDrawable
+
+    // attrs
+    private var pinAttrs: TypedArray
+    private var textSize: Float
     private var textColor: Int
-
-    // pin box styles
-    private lateinit var pinSelected: GradientDrawable
-    private lateinit var pinUnselected: GradientDrawable
-    private lateinit var pinError: GradientDrawable
+    private var width: Int
+    private var height: Int
+    private var borderWidth: Int
+    private var marginHorizontal: Int
+    private var boxCount: Int
+    private var selectedPinBackgroundColor: Int
+    private var selectedPinBorderColor: Int
+    private var unselectedPinBackgroundColor: Int
+    private var unselectedPinBorderColor: Int
+    private var successPinBackgroundColor: Int
+    private var successPinBorderColor: Int
+    private var errorPinBackgroundColor: Int
+    private var errorPinBorderColor: Int
 
     // pin status
     private var pin: String = ""
 
-    // to be used to inform listeners
-    private var listener: PinViewListener? = null
+    /**
+     * Sets a listener that will be triggered when the PIN input is completed.
+     *
+     * @param onSubmit A lambda function that receives the completed PIN as a String
+     *                 and returns a Boolean indicating whether the PIN is valid or not.
+     */
+    fun setOnPinCompletedListener(onSubmit: (String) -> Boolean) {
+        onPinCompleted = onSubmit
+    }
 
     init {
         inflate(context, R.layout.pin_view, this)
+        val defBackgroundColor = getColor(R.color.default_background)
 
-        val pinAttr = context.obtainStyledAttributes(attrs, R.styleable.pin_view, 0, 0)
+        pinAttrs = context.obtainStyledAttributes(attrs, R.styleable.pin_view, defStyle, 0)
 
-        selectedBorderColor = pinAttr.getColor(
-            R.styleable.pin_view_selected_border_color,
-            ContextCompat.getColor(context, R.color.main)
+        pinBoxUnselectedView = getDrawable(R.drawable.pin) as GradientDrawable
+        pinBoxSelectedView = getDrawable(R.drawable.pin_selected) as GradientDrawable
+        pinBoxSuccessView = getDrawable(R.drawable.pin_success) as GradientDrawable
+        pinBoxErrorView = getDrawable(R.drawable.pin_error) as GradientDrawable
+
+        textSize = getAttrDimen(
+            R.styleable.pin_view_android_textSize, getDimen(R.dimen.input_text_size)
         )
 
-        unselectedBorderColor = pinAttr.getColor(
-            R.styleable.pin_view_unselected_border_color,
-            ContextCompat.getColor(context, R.color.default_border)
+        textColor = getAttrColor(R.styleable.pin_view_android_textColor, getColor(R.color.black))
+
+        width = getAttrDimen(R.styleable.pin_view_width, getDimen(R.dimen.width_height)).toInt()
+
+        height = getAttrDimen(R.styleable.pin_view_height, getDimen(R.dimen.width_height)).toInt()
+
+        borderWidth = getAttrDimen(
+            R.styleable.pin_view_pin_border_width, getDimen(R.dimen.border_width)
+        ).toInt()
+
+        marginHorizontal = getAttrDimen(
+            R.styleable.pin_view_margin_horizontal, getDimen(R.dimen.margin_horizontal)
+        ).toInt()
+
+        boxCount = getAttrInt(R.styleable.pin_view_box_count, 6)
+        boxCount = if (boxCount < 4)
+            4
+        else if (boxCount > 8)
+            8
+        else
+            boxCount
+
+        selectedPinBackgroundColor = getAttrColor(
+            R.styleable.pin_view_selected_background_color, defBackgroundColor
         )
 
-        errorBorderColor = pinAttr.getColor(
-            R.styleable.pin_view_error_border_color,
-            ContextCompat.getColor(context, R.color.default_error_border)
+        selectedPinBorderColor = getAttrColor(
+            R.styleable.pin_view_selected_border_color, getColor(R.color.main)
         )
 
-        background = pinAttr.getColor(
-            R.styleable.pin_view_pin_background,
-            ContextCompat.getColor(context, R.color.default_background)
+        unselectedPinBackgroundColor = getAttrColor(
+            R.styleable.pin_view_unselected_background_color, defBackgroundColor
         )
 
-        borderWidth = pinAttr.getInt(
-            R.styleable.pin_view_border_width,
-            6
+        unselectedPinBorderColor = getAttrColor(
+            R.styleable.pin_view_unselected_border_color, getColor(R.color.default_border)
         )
 
-        textColor = pinAttr.getColor(
-            R.styleable.pin_view_android_textColor,
-            ContextCompat.getColor(context, R.color.main)
+        successPinBackgroundColor = getAttrColor(
+            R.styleable.pin_view_success_background_color, defBackgroundColor
         )
 
-        pinAttr.recycle()
+        successPinBorderColor = getAttrColor(
+            R.styleable.pin_view_success_border_color, getColor(R.color.default_success_border)
+        )
 
-        initUI()
-    }
+        errorPinBackgroundColor = getAttrColor(
+            R.styleable.pin_view_error_background_color, defBackgroundColor
+        )
 
-    private fun initUI() {
+        errorPinBorderColor = getAttrColor(
+            R.styleable.pin_view_error_border_color, getColor(R.color.default_error_border)
+        )
 
-        pinSelected =
-            ContextCompat.getDrawable(context, R.drawable.pin_selected) as GradientDrawable
-        pinUnselected = ContextCompat.getDrawable(context, R.drawable.pin) as GradientDrawable
-        pinError = ContextCompat.getDrawable(context, R.drawable.pin_error) as GradientDrawable
-
-        pinSelected.setStroke(borderWidth, selectedBorderColor)
-        pinUnselected.setStroke(borderWidth, unselectedBorderColor)
-        pinError.setStroke(borderWidth, errorBorderColor)
-
-        pinSelected.setColor(background)
-        pinUnselected.setColor(background)
-        pinError.setColor(background)
+        pinAttrs.recycle()
 
         inputMethodManager =
             context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
-
-        setEditTextList()
+        setPinBoxCount()
+        setPinBoxViews()
+        changePinBoxListBackground(PinBoxType.UNSELECTED)
+        setPinBoxListStyle()
+        setPinBoxListeners()
     }
 
-    private fun setEditTextList() {
-        val binding = PinViewBinding.bind(this)
-        binding.apply {
-            editTextList = arrayOf(
-                firstChar,
-                secondChar,
-                thirdChar,
-                fourthChar,
-                fifthChar,
-                sixthChar
-            )
-            setStyles()
-            setListeners()
+    private fun setPinBoxCount() {
+        for (index in 7 downTo boxCount) {
+            pinBoxList[index].visibility = View.GONE
+            pinBoxList.removeAt(index)
         }
     }
 
-    fun setPinListener(listener: PinViewListener) {
-        this.listener = listener
+    private fun setPinBoxViews() {
+        pinBoxUnselectedView.setColorAndStroke(
+            unselectedPinBackgroundColor, unselectedPinBorderColor
+        )
+        pinBoxSelectedView.setColorAndStroke(selectedPinBackgroundColor, selectedPinBorderColor)
+        pinBoxSuccessView.setColorAndStroke(successPinBackgroundColor, successPinBorderColor)
+        pinBoxErrorView.setColorAndStroke(errorPinBackgroundColor, errorPinBorderColor)
     }
 
-    // to change the pin box background according to the error status
-    fun changePinBoxBackground(isError: Boolean) {
-        editTextList.forEach { editText ->
-            editText.background =
-                if (isError)
-                    pinError
-                else
-                    pinUnselected
+    private fun GradientDrawable.setColorAndStroke(backgroundColor: Int, borderColor: Int) {
+        setColor(backgroundColor)
+        setStroke(borderWidth, borderColor)
+    }
+
+    private fun getBinding(): PinViewBinding = PinViewBinding.bind(this)
+
+    private fun setPinBoxListStyle() {
+        pinBoxList.forEach { pinBox ->
+            pinBox.background = pinBoxUnselectedView
+            pinBox.setTextColor(textColor)
+            pinBox.textSize = textSize
+
+            val params = pinBox.layoutParams as MarginLayoutParams
+            params.width = width
+            params.height = height
+            params.setMargins(marginHorizontal, 0, marginHorizontal, 0)
+            pinBox.layoutParams = params
         }
     }
 
-    // when this function is called, information is passed to the listeners
-    private fun onPinEntryCompleted() {
-        listener?.onPinEntryCompleted(pin)
-    }
-
-    // setting the pin box's styles
-    private fun setStyles() {
-        editTextList.forEach { editText ->
-            editText.background = pinUnselected
-            editText.setTextColor(textColor)
+    private fun changePinBoxBackground(view: EditText, pinBoxType: PinBoxType) {
+        view.background = when (pinBoxType) {
+            PinBoxType.UNSELECTED -> pinBoxUnselectedView
+            PinBoxType.SELECTED -> pinBoxSelectedView
+            PinBoxType.SUCCESS -> pinBoxSuccessView
+            PinBoxType.ERROR -> pinBoxErrorView
         }
     }
 
-    // add listeners to all edit text elements
-    private fun setListeners() {
-        editTextList.forEach { editText ->
-            editText.clearFocus()
-            editText.setOnFocusChangeListener { view, hasFocus ->
-                // to set the pin box background color
-                if (pin.length != 6) {
-                    if (hasFocus)
-                        editText.background = pinSelected
-                    else
-                        editText.background = pinUnselected
-                }
-                // to focus on the current box
-                if (hasFocus && pin.length < 6) {
-                    editTextList[pin.length].requestFocus()
-                    changeKeyboardVisibility(true, view)
-                }
-                // if the input size equal to 6 and password not matched
-                else if (hasFocus && pin.length == 6) {
-                    editTextList[pin.lastIndex].requestFocus()
-                    changeKeyboardVisibility(true, view)
-                }
-            }
+    private fun changePinBoxListBackground(pinBoxType: PinBoxType) {
+        pinBoxList.forEachIndexed { _, pinBox ->
+            changePinBoxBackground(pinBox, pinBoxType)
+        }
+    }
 
-            editText.addTextChangedListener { text ->
-                pin += text.toString()
+    private fun changePinBoxEditableStatus(isEnable: Boolean) {
+        pinBoxList.forEach { pinBox ->
+            pinBox.isEnabled = isEnable
+        }
+    }
 
-                // check password if input length is equal to 6
-                if (pin.length == 6) {
-                    editText.clearFocus()
-                    changeKeyboardVisibility(false, editText)
-                    onPinEntryCompleted()
-                } else
-                    editText.onEditorAction(EditorInfo.IME_ACTION_NEXT)
-            }
+    private fun setPinBoxListeners() {
+        pinBoxList.forEachIndexed { index, pinBox ->
+            setPinBoxFocusChangeListener(index, pinBox)
+            addPinBoxTextChangedListener(pinBox)
+            setPinBoxOnKeyListener(pinBox)
+        }
+    }
 
-            // to handle delete button press
-            editText.setOnKeyListener { _, keyCode, keyEvent ->
-                if (keyCode == KeyEvent.KEYCODE_DEL && keyEvent.action == KeyEvent.ACTION_DOWN) {
-
-                    // change to selector background if the edit text background is error background
-                    if (editText.background.constantState === ContextCompat.getDrawable(
-                            context,
-                            R.drawable.pin_error
-                        )!!.constantState
-                    ) {
-                        changePinBoxBackground(false)
-                    }
-
-                    // delete last element in input
-                    if (pin.isNotEmpty()) {
-                        pin = pin.substring(0, pin.lastIndex)
-                        editTextList[pin.length].text.clear()
-                        editText.onEditorAction(EditorInfo.IME_ACTION_PREVIOUS)
-                    }
-
-                    true
-                } else
-                    false
+    private fun setPinBoxFocusChangeListener(index: Int, pinBox: EditText) {
+        pinBox.setOnFocusChangeListener { _, _ ->
+            val pinLength = pin.length
+            if (pinLength == index)
+                changePinBoxBackground(pinBox, PinBoxType.SELECTED)
+            else if (pinLength != pinBoxList.size) {
+                pinBoxList[pinLength].requestFocus()
+                changeKeyboardVisibility(true, pinBox)
+                changePinBoxBackground(pinBox, PinBoxType.UNSELECTED)
             }
         }
     }
+
+    private fun addPinBoxTextChangedListener(pinBox: EditText) {
+        pinBox.addTextChangedListener { text ->
+            pin += text
+            if (pin.length == pinBoxList.size) {
+                changeKeyboardVisibility(false, this)
+                changePinBoxEditableStatus(false)
+                onPinCompleted?.let { pinCompleted ->
+                    val isCorrect = pinCompleted.invoke(pin)
+                    if (isCorrect) changePinBoxListBackground(PinBoxType.SUCCESS)
+                    else changePinBoxListBackground(PinBoxType.ERROR)
+                }
+                changePinBoxEditableStatus(true)
+            } else pinBoxList[pin.length].requestFocus()
+        }
+    }
+
+    private fun setPinBoxOnKeyListener(pinBox: EditText) {
+        pinBox.setOnKeyListener { _, keyCode, keyEvent ->
+            if (keyCode == KeyEvent.KEYCODE_DEL && keyEvent.action == KeyEvent.ACTION_DOWN) {
+
+                val backgroundConstantState = pinBox.background.constantState
+                val pinError =
+                    ContextCompat.getDrawable(context, R.drawable.pin_error)!!.constantState
+                val pinSuccess =
+                    ContextCompat.getDrawable(context, R.drawable.pin_success)!!.constantState
+
+                if (backgroundConstantState == pinError || backgroundConstantState == pinSuccess)
+                    changePinBoxListBackground(PinBoxType.UNSELECTED)
+
+                if (pin.isNotEmpty()) {
+                    pin = pin.substring(0, pin.lastIndex)
+                    pinBoxList[pin.length].text.clear()
+                    if (pin.isNotEmpty()) pinBox.onEditorAction(EditorInfo.IME_ACTION_PREVIOUS)
+                }
+                true
+            } else false
+        }
+    }
+
+    private fun getDrawable(id: Int) = ContextCompat.getDrawable(context, id)
+
+    private fun getAttrDimen(index: Int, defValue: Float) = pinAttrs.getDimension(index, defValue)
+
+    private fun getAttrColor(index: Int, defValue: Int) = pinAttrs.getColor(index, defValue)
+
+    private fun getAttrInt(index: Int, defValue: Int) = pinAttrs.getInt(index, defValue)
+
+    private fun getDimen(index: Int) = resources.getDimension(index)
+
+    private fun getColor(index: Int) = resources.getColor(index, null)
 
     private fun changeKeyboardVisibility(isOpen: Boolean, view: View) {
         if (isOpen)
             inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
         else
             inputMethodManager.hideSoftInputFromWindow(
-                view.windowToken,
-                InputMethodManager.HIDE_IMPLICIT_ONLY
+                view.windowToken, InputMethodManager.HIDE_IMPLICIT_ONLY
             )
     }
-
 }
